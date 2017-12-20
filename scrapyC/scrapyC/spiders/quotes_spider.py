@@ -17,5 +17,6 @@ class QuotesSpider(scrapy.Spider):
 
         next_page = response.css('li.next a::attr(href)').extract_first()
         if next_page is not None:
-            next_page = response.urljoin(next_page)
-            yield scrapy.Request(next_page, callback=self.parse)
+            yield response.follow(next_page, callback=self.parse)
+
+# response.follow supports relative URLs directly - no need to call urljoin
