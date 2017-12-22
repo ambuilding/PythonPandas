@@ -14,170 +14,170 @@ proxies = {
 MEDIUM = 'https://medium.com'
 
 # clean ])}while(1);</x> up and turn the JSON into a Python dictionary.
-def clean_json_response(response):
+def cleanJson(response):
     return json.loads(response.text.replace('])}while(1);</x>', '', 1))
 
-# Pull the user ID from a given username
+# Pull the userId from a given username
 # Then query the /_/api/users/<user_id>/following endpoint
 # get the list of usernames from the following list
-def get_user_id(username):
+def fetchAUserIdByInput(username):
 
     print('Retrieving user ID...')
 
     url = MEDIUM + '/@' + username + '?format=json'
     response = requests.get(url, proxies=proxies)
-    response_dict = clean_json_response(response)
+    responseDict = cleanJson(response)
 
-    return response_dict['payload']['user']['userId']
+    return responseDict['payload']['user']['userId']
 
 # pagination / limit / to
-# a loop
-def get_list_of_followings(user_id):
+# a loop to get all the usernames from the following list
+def fetchFollowingUsernamesBy(userId):
 
-    print('Retrieving users from Followings...')
+    print('Retrieving usernames from Following List...')
 
-    next_id = False
-    followings = []
+    nextTo = False
+    following = []
 
     while True:
 
-        if next_id:
+        if nextTo:
             # If this is not the first page of the followings list
-            url = MEDIUM + '/_/api/users/' + user_id + '/following?limit=8&to=' + next_id
+            url = MEDIUM + '/_/api/users/' + userId + '/following?limit=8&to=' + nextTo
         else:
             # If this is the first page of the followings list
-            url = MEDIUM + '/_/api/users/' + user_id + '/following'
+            url = MEDIUM + '/_/api/users/' + userId + '/following'
 
         response = requests.get(url, proxies=proxies)
-        response_dict = clean_json_response(response)
-        payload = response_dict['payload']
+        responseDict = cleanJson(response)
+        payload = responseDict['payload']
 
         for user in payload['value']:
-            followings.append(user['username'])
+            following.append(user['username'])
 
         try:
             # If the "to" key is missing, we've reached the end
             # of the list and an exception is thrown
-            next_id = payload['paging']['next']['to']
+            nextTo = payload['paging']['next']['to']
         except:
             break
 
-    return followings
+    return following
 
-# take a list of usernames
-# return a list of post IDs for the latest posts
-def get_list_of_latest_posts_ids(usernames):
+# get the latest posts(post_ids) from each user by all the usernames
+def fetchLatestPostIdsBy(usernames):
 
     print('Retrieving the latest posts...')
 
-    post_ids = []
+    postIds = []
 
     for username in usernames:
         url = MEDIUM + '/@' + username + '/latest?format=json'
         response = requests.get(url, proxies=proxies)
-        response_dict = clean_json_response(response)
+        responseDict = cleanJson(response)
 
         try:
-            posts = response_dict['payload']['references']['Post']
+            posts = responseDict['payload']['references']['Post']
         except:
             posts = []
 
         if posts:
+            # posts.keys()
             for key in posts.keys():
-                post_ids.append(posts[key]['id'])
+                postIds.append(posts[key]['id'])
 
-    return post_ids
+    return postIds
 
-# takes a list of post IDs and returns a list of post responses
-def get_post_responses(posts):
+# get all the responses from each post by post_ids
+def fetchResponsesOfEachPostBy(postIds):
 
     print('Retrieving the post responses...')
     responses = []
 
-    for post in posts:
-        url = MEDIUM + '/_/api/posts/' + post + '/responses'
+    for postId in postIds:
+        url = MEDIUM + '/_/api/posts/' + postId + '/responses'
         response = requests.get(url, proxies=proxies)
-        response_dict = clean_json_response(response)
-        responses += response_dict['payload']['value']
+        responseDict = cleanJson(response)
+        responses += responseDict['payload']['value']
         sleep(0.5) # This is the most intensive operation for the Medium servers
 
     return responses
 
-# Filtering the responses
-# Checks if a response was created in the last 30 days
-def check_if_recent(response):
-    limit_date = datetime.now() - timedelta(days=30)
-    creation_epoch_time = response['createdAt'] / 1000
-    creation_date = datetime.fromtimestamp(creation_epoch_time)
+# Filter the responses
+# Checks if a response was created in the last 30 days (recent responses)
+def isRecent(response):
+    limitDate = datetime.now() - timedelta(days=30)
+    createdAt = response['createdAt'] / 1000
+    createDate = datetime.fromtimestamp(createdAt)
 
-    if creation_date >= limit_date:
+    if createDate >= limitDate:
         return True
 
 # Checks if a response is over a certain number of recommends
-def check_if_high_recommends(response, recommend_min):
+def isHighRecommend(response, recommend_min):
     if response['virtuals']['recommends'] >= recommend_min:
         return True
 
 
-# get the username of the author of each response
-def get_user_ids_from_responses(responses, recommend_min):
+# get each response and its author's userIds and usernames
+def fetchAllUserIdsFrom(responses, recommend_min):
     print('Retrieving user IDs from the responses...')
 
-    user_ids = []
+    userIds = []
 
     for response in responses:
-        recent = check_if_recent(response)
-        high = check_if_high_recommends(response, recommend_min)
+        recent = isRecent(response)
+        highRecommends = isHighRecommend(response, recommend_min)
 
-        if recent and high:
-            user_ids.append(response['creatorId'])
+        if recent and highRecommends:
+            userIds.append(response['creatorId'])
 
-    return user_ids
+    return userIds
 
-def get_usernames(user_ids):
+def fetchUsernamesBy(userIds):
     print('Retrieving usernames of interesting users...')
 
     usernames = []
 
-    for user_id in user_ids:
-        url = MEDIUM + '/_/api/users/' + user_id
+    for userId in userIds:
+        url = MEDIUM + '/_/api/users/' + userId
         response = requests.get(url, proxies=proxies)
-        response_dict = clean_json_response(response)
-        payload = response_dict['payload']
+        responseDict = cleanJson(response)
+        payload = responseDict['payload']
         usernames.append(payload['value']['username'])
 
     return usernames
 
 # Add list of interesting users to the interesting_users.csv and add a timestamp
-def list_to_csv(interesting_users_list):
-    with open('interesting_users.csv', 'a') as file:
+def storeToCsv(interestingUsers):
+    with open('interestingUsers.csv', 'a') as file:
         writer = csv.writer(file)
 
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        interesting_users_list.insert(0, now)
+        interestingUsers.insert(0, now)
 
-        writer.writerow(interesting_users_list)
+        writer.writerow(interestingUsers)
 
-# put them all together
-def get_interesting_users(username, recommend_min):
+# put them together
+def fetchFollowingInterestingUsersBy(username, recommend_min):
     print('Looking for interesting users for %s...' % username)
 
-    user_id = get_user_id(username)
-    usernames = get_list_of_followings(user_id)
-    posts = get_list_of_latest_posts_ids(usernames)
-    responses = get_post_responses(posts)
-    users = get_user_ids_from_responses(responses, recommend_min)
+    userId = fetchAUserIdByInput(username)
+    usernames = fetchFollowingUsernamesBy(userId)
+    postIds = fetchLatestPostIdsBy(usernames)
+    responses = fetchResponsesOfEachPostBy(postIds)
+    userIds = fetchAllUserIdsFrom(responses, recommend_min)
 
-    return get_usernames(users)
+    return fetchUsernamesBy(userIds)
 
 @click.command()
 @click.option('-n', '--name', default='explorewo', help='Medium username')
 @click.option('-r', '--min-recommendations', default=10, help='Minimum number of recommendations per response')
 
 def main(name, min_recommendations):
-    interesting_users = get_interesting_users(name, min_recommendations)
-    print(interesting_users)
-    list_to_csv(interesting_users)
+    interestingUsers = fetchFollowingInterestingUsersBy(name, min_recommendations)
+    print(interestingUsers)
+    storeToCsv(interestingUsers)
 
 if __name__ == '__main__':
     main()
