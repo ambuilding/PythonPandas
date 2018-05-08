@@ -21,7 +21,6 @@ def cleanJson(response):
 # Then query the /_/api/users/<user_id>/following endpoint
 # get the list of usernames from the following list
 def fetchAUserIdByInput(username):
-
     print('Retrieving user ID...')
 
     url = MEDIUM + '/@' + username + '?format=json'
@@ -33,7 +32,6 @@ def fetchAUserIdByInput(username):
 # pagination / limit / to
 # a loop to get all the usernames from the following list
 def fetchFollowingUsernamesBy(userId):
-
     print('Retrieving usernames from Following List...')
 
     nextTo = False
@@ -66,11 +64,9 @@ def fetchFollowingUsernamesBy(userId):
 
 # get the latest posts(post_ids) from each user by all the usernames
 def fetchLatestPostIdsBy(usernames):
-
     print('Retrieving the latest posts...')
 
     postIds = []
-
     for username in usernames:
         url = MEDIUM + '/@' + username + '/latest?format=json'
         response = requests.get(url, proxies=proxies)
@@ -90,10 +86,9 @@ def fetchLatestPostIdsBy(usernames):
 
 # get all the responses from each post by post_ids
 def fetchResponsesOfEachPostBy(postIds):
-
     print('Retrieving the post responses...')
-    responses = []
 
+    responses = []
     for postId in postIds:
         url = MEDIUM + '/_/api/posts/' + postId + '/responses'
         response = requests.get(url, proxies=proxies)
@@ -124,7 +119,6 @@ def fetchAllUserIdsFrom(responses, recommend_min):
     print('Retrieving user IDs from the responses...')
 
     userIds = []
-
     for response in responses:
         recent = isRecent(response)
         highRecommends = isHighRecommend(response, recommend_min)
@@ -138,7 +132,6 @@ def fetchUsernamesBy(userIds):
     print('Retrieving usernames of interesting users...')
 
     usernames = []
-
     for userId in userIds:
         url = MEDIUM + '/_/api/users/' + userId
         response = requests.get(url, proxies=proxies)
@@ -155,7 +148,6 @@ def storeToCsv(interestingUsers):
 
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         interestingUsers.insert(0, now)
-
         writer.writerow(interestingUsers)
 
 # put them together

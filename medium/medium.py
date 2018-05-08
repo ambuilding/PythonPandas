@@ -9,14 +9,13 @@ from datetime import datetime, timedelta
 MEDIUM = 'https://medium.com'
 
 # clean ])}while(1);</x> up and turn the JSON into a Python dictionary.
-def clean_json_response(response):
+def clean_json_from(response):
     return json.loads(response.text.replace('])}while(1);</x>', '', 1))
 
 # Pull the user ID from a given username
 # Then query the /_/api/users/<user_id>/following endpoint
 # get the list of usernames from the following list
-def get_user_id(username):
-
+def pull_user_id_from(username):
     print('Retrieving user ID...')
 
     url = MEDIUM + '/@' + username + '?format=json'
@@ -27,15 +26,13 @@ def get_user_id(username):
 
 # pagination / limit / to
 # a loop
-def get_list_of_followings(user_id):
-
-    print('Retrieving users from Followings...')
+def get_followings_usernames_from(user_id):
+    print('Retrieving usernames from Followings...')
 
     next_id = False
     followings = []
 
     while True:
-
         if next_id:
             # If this is not the first page of the followings list
             url = MEDIUM + '/_/api/users/' + user_id + '/following?limit=8&to=' + next_id
@@ -61,12 +58,10 @@ def get_list_of_followings(user_id):
 
 # take a list of usernames
 # return a list of post IDs for the latest posts
-def get_list_of_latest_posts_ids(usernames):
-
+def get_latest_postids_from(usernames):
     print('Retrieving the latest posts...')
 
     post_ids = []
-
     for username in usernames:
         url = MEDIUM + '/@' + username + '/latest?format=json'
         response = requests.get(url)
@@ -84,13 +79,12 @@ def get_list_of_latest_posts_ids(usernames):
     return post_ids
 
 # takes a list of post IDs and returns a list of post responses
-def get_post_responses(posts):
-
+def get_each_post_response_from(post_ids):
     print('Retrieving the post responses...')
-    responses = []
 
-    for post in posts:
-        url = MEDIUM + '/_/api/posts/' + post + '/responses'
+    responses = []
+    for post in post_ids:
+        url = MEDIUM + '/_/api/posts/' + post_ids + '/responses'
         response = requests.get(url)
         response_dict = clean_json_response(response)
         responses += response_dict['payload']['value']
@@ -99,6 +93,11 @@ def get_post_responses(posts):
     return responses
 
 # Filtering the responses
+# Checks if a response is over a certain number of recommends
+def check_if_high_recommends(response, recommend_min):
+    if response['virtuals']['recommends'] >= recommend_min:
+        return True
+
 # Checks if a response was created in the last 30 days
 def check_if_recent(response):
     limit_date = datetime.now() - timedelta(days=30)
@@ -108,18 +107,11 @@ def check_if_recent(response):
     if creation_date >= limit_date:
         return True
 
-# Checks if a response is over a certain number of recommends
-def check_if_high_recommends(response, recommend_min):
-    if response['virtuals']['recommends'] >= recommend_min:
-        return True
-
-
 # get the username of the author of each response
-def get_user_ids_from_responses(responses, recommend_min):
+def get_user_ids_from(responses, recommend_min):
     print('Retrieving user IDs from the responses...')
 
     user_ids = []
-
     for response in responses:
         recent = check_if_recent(response)
         high = check_if_high_recommends(response, recommend_min)
@@ -129,11 +121,10 @@ def get_user_ids_from_responses(responses, recommend_min):
 
     return user_ids
 
-def get_usernames(user_ids):
+def get_usernames_from(user_ids):
     print('Retrieving usernames of interesting users...')
 
     usernames = []
-
     for user_id in user_ids:
         url = MEDIUM + '/_/api/users/' + user_id
         response = requests.get(url)
