@@ -1,4 +1,4 @@
-## Use scrapy to build dataset
+### Use scrapy to build dataset
 
 - scrapy startproject fundrazr
 
@@ -40,3 +40,13 @@
 - Items / The main goal in scraping is to extract structured data from unstructured sources, typically, web pages. Scrapy spiders can return the extracted data as Python dicts.
 
 	$ scrapy crawl fundrazr.com -o MonthDay_Year.csv
+
+### How to crawl the web politely with scrapy
+- Do not harm the website
+
+#### A polite crawler
+- Respect robots.txt
+- Never degrade a website’s performance
+- Identifie its creator with contact information
+- DOWNLOAD_DELAY / AUTOTHROTTLE_ENABLED / HTTPCACHE_ENABLED
+- Don’t Crawl, use the API

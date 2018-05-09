@@ -5,6 +5,7 @@ from datetime import datetime
 
 class FundrazrSpider(scrapy.Spider):
 	name = "fundrazr.com"
+	download_delay = 2
 	allowed_domains = ['fundrazr.com']
 	start_urls = ["https://fundrazr.com/find?category=Health"]
 
